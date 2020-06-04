@@ -27,9 +27,11 @@ void loop() {
   // do nothing
 }
 
-void onReceive(int packetSize) {
+void onReceive() {
   // received a packet
   Serial.print("Received packet '");
+
+  int packetSize = LoRa.handleDio0Rise();
 
   // read packet
   for (int i = 0; i < packetSize; i++) {

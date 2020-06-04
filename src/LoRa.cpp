@@ -70,7 +70,6 @@ LoRaClass::LoRaClass() :
   _frequency(0),
   _packetIndex(0),
   _implicitHeaderMode(0),
-  _onReceive(NULL),
   _onTxDone(NULL)
 {
   // overide Stream timeout value
@@ -349,16 +348,14 @@ void LoRaClass::flush()
 }
 
 #ifndef ARDUINO_SAMD_MKRWAN1300
-void LoRaClass::onReceive(void(*callback)(int))
+void LoRaClass::onReceive(void(*callback)())
 {
-  _onReceive = callback;
-
   if (callback) {
     pinMode(_dio0, INPUT);
 #ifdef SPI_HAS_NOTUSINGINTERRUPT
     SPI.usingInterrupt(digitalPinToInterrupt(_dio0));
 #endif
-    attachInterrupt(digitalPinToInterrupt(_dio0), LoRaClass::onDio0Rise, RISING);
+    attachInterrupt(digitalPinToInterrupt(_dio0), callback, RISING);
   } else {
     detachInterrupt(digitalPinToInterrupt(_dio0));
 #ifdef SPI_HAS_NOTUSINGINTERRUPT
@@ -653,8 +650,9 @@ void LoRaClass::implicitHeaderMode()
   writeRegister(REG_MODEM_CONFIG_1, readRegister(REG_MODEM_CONFIG_1) | 0x01);
 }
 
-void LoRaClass::handleDio0Rise()
+int LoRaClass::handleDio0Rise()
 {
+  int packetSize = 0;
   int irqFlags = readRegister(REG_IRQ_FLAGS);
 
   // clear IRQ's
@@ -667,14 +665,10 @@ void LoRaClass::handleDio0Rise()
       _packetIndex = 0;
 
       // read packet length
-      int packetLength = _implicitHeaderMode ? readRegister(REG_PAYLOAD_LENGTH) : readRegister(REG_RX_NB_BYTES);
+      packetSize = _implicitHeaderMode ? readRegister(REG_PAYLOAD_LENGTH) : readRegister(REG_RX_NB_BYTES);
 
       // set FIFO address to current RX address
       writeRegister(REG_FIFO_ADDR_PTR, readRegister(REG_FIFO_RX_CURRENT_ADDR));
-
-      if (_onReceive) {
-        _onReceive(packetLength);
-      }
     }
     else if ((irqFlags & IRQ_TX_DONE_MASK) != 0) {
       if (_onTxDone) {
@@ -682,6 +676,7 @@ void LoRaClass::handleDio0Rise()
       }
     }
   }
+  return packetSize;
 }
 
 uint8_t LoRaClass::readRegister(uint8_t address)

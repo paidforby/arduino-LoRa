@@ -56,8 +56,9 @@ public:
   virtual void flush();
 
 #ifndef ARDUINO_SAMD_MKRWAN1300
-  void onReceive(void(*callback)(int));
+  void onReceive(void(*callback)());
   void onTxDone(void(*callback)());
+  int handleDio0Rise();
 
   void receive(int size = 0);
 #endif
@@ -94,7 +95,6 @@ private:
   void explicitHeaderMode();
   void implicitHeaderMode();
 
-  void handleDio0Rise();
   bool isTransmitting();
 
   int getSpreadingFactor();
@@ -117,7 +117,6 @@ private:
   long _frequency;
   int _packetIndex;
   int _implicitHeaderMode;
-  void (*_onReceive)(int);
   void (*_onTxDone)();
 };
 
