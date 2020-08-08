@@ -21,7 +21,7 @@
 #define LORA_DEFAULT_DIO0_PIN      LORA_IRQ
 #else
 #define LORA_DEFAULT_SPI           SPI
-#define LORA_DEFAULT_SPI_FREQUENCY 8E6 
+#define LORA_DEFAULT_SPI_FREQUENCY 8E6
 #define LORA_DEFAULT_SS_PIN        10
 #define LORA_DEFAULT_RESET_PIN     9
 #define LORA_DEFAULT_DIO0_PIN      2
@@ -34,7 +34,7 @@ class LoRaClass : public Stream {
 public:
   LoRaClass();
 
-  int begin(long frequency);
+  int begin(long frequency, boolean reset = true);
   void end();
 
   int beginPacket(int implicitHeader = false);
@@ -76,8 +76,10 @@ public:
   void disableCrc();
   void enableInvertIQ();
   void disableInvertIQ();
-  
+
   void setOCP(uint8_t mA); // Over Current Protection control
+
+  void handleDio0Rise();
 
   // deprecated
   void crc() { enableCrc(); }

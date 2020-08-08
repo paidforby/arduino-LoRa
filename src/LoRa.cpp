@@ -76,7 +76,7 @@ LoRaClass::LoRaClass() :
   setTimeout(0);
 }
 
-int LoRaClass::begin(long frequency)
+int LoRaClass::begin(long frequency, boolean reset)
 {
 #if defined(ARDUINO_SAMD_MKRWAN1300) || defined(ARDUINO_SAMD_MKRWAN1310)
   pinMode(LORA_IRQ_DUMB, OUTPUT);
@@ -103,11 +103,13 @@ int LoRaClass::begin(long frequency)
   if (_reset != -1) {
     pinMode(_reset, OUTPUT);
 
-    // perform reset
-    digitalWrite(_reset, LOW);
-    delay(10);
-    digitalWrite(_reset, HIGH);
-    delay(10);
+    if (reset) {
+      // perform reset
+      digitalWrite(_reset, LOW);
+      delay(10);
+      digitalWrite(_reset, HIGH);
+      delay(10);
+    }
   }
 
   // start SPI
@@ -117,6 +119,11 @@ int LoRaClass::begin(long frequency)
   uint8_t version = readRegister(REG_VERSION);
   if (version != 0x12) {
     return 0;
+  }
+
+  if (!reset) {
+    // did not reset the LoRa chip so no need to set it up again.
+    return 1;
   }
 
   // put in sleep mode
@@ -177,7 +184,6 @@ int LoRaClass::beginPacket(int implicitHeader)
 
 int LoRaClass::endPacket(bool async)
 {
-  
   if ((async) && (_onTxDone))
       writeRegister(REG_DIO_MAPPING_1, 0x40); // DIO0 => TXDONE
 
